@@ -144,10 +144,13 @@ define(function(require) {
 
     var authClient;
     if (opts.oktaAuthArgs) {
+      // Disable token validation for all tests
+      opts.oktaAuthArgs.ignoreSignature = true;
       authClient = new OktaAuth(opts.oktaAuthArgs);
     } else {
       authClient = new OktaAuth({
-        url: 'https://auth-js-test.okta.com'
+        url: 'https://auth-js-test.okta.com',
+        ignoreSignature: true
       });
     }
 
@@ -329,7 +332,8 @@ define(function(require) {
     var client = new OktaAuth(opts.oktaAuthArgs || {
       url: 'https://auth-js-test.okta.com',
       clientId: 'NPSfOkH5eZrTy8PMDlvx',
-      redirectUri: 'https://example.com/redirect'
+      redirectUri: 'https://example.com/redirect',
+      ignoreSignature: true
     });
 
     oauthUtil.mockStateAndNonce();
@@ -422,7 +426,8 @@ define(function(require) {
     var client =  new OktaAuth({
       url: 'https://auth-js-test.okta.com',
       clientId: 'NPSfOkH5eZrTy8PMDlvx',
-      redirectUri: 'https://example.com/redirect'
+      redirectUri: 'https://example.com/redirect',
+      ignoreSignature: true
     });
 
     var emitter = new EventEmitter();

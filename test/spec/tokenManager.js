@@ -496,7 +496,7 @@ define(function(require) {
           });
         });
       });
-      
+
       describe('clear', function() {
         it('clears all tokens', function() {
           var client = sessionStorageSetup();
