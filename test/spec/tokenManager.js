@@ -32,17 +32,27 @@ define(function(require) {
         });
       });
       it('defaults to sessionStorage if localStorage isn\'t available', function() {
+        spyOn(window.console, 'log');
         oauthUtil.mockLocalStorageError();
         var client = setupSync();
+        expect(window.console.log).toHaveBeenCalledWith(
+          '[okta-auth-sdk] WARN: This browser doesn\'t ' +
+          'support localStorage. Switching to sessionStorage.'
+        );
         client.tokenManager.add('test-idToken', tokens.standardIdTokenParsed);
         oauthUtil.expectTokenStorageToEqual(sessionStorage, {
           'test-idToken': tokens.standardIdTokenParsed
         });
       });
       it('defaults to cookie-based storage if localStorage and sessionStorage are not available', function() {
+        spyOn(window.console, 'log');
         oauthUtil.mockLocalStorageError();
         oauthUtil.mockSessionStorageError();
         var client = setupSync();
+        expect(window.console.log).toHaveBeenCalledWith(
+          '[okta-auth-sdk] WARN: This browser doesn\'t ' +
+          'support sessionStorage. Switching to cookie-based storage.'
+        );
         var setCookieMock = util.mockSetCookie();
         client.tokenManager.add('test-idToken', tokens.standardIdTokenParsed);
         expect(setCookieMock).toHaveBeenCalledWith('okta-token-storage=' + JSON.stringify({
@@ -379,10 +389,18 @@ define(function(require) {
         client.tokenManager.on('expired', function(key, token) {
           expect(key).toEqual('test-idToken');
           expect(token).toEqual(tokens.standardIdTokenParsed);
-          expect(client.tokenManager.get('test-idToken')).toBeUndefined();
-          done();
+          client.tokenManager.get('test-idToken')
+          .then(function(token) {
+            expect(token).toBeUndefined();
+            done();
+          });
         });
         util.warpByTicksToUnixTime(tokens.standardIdTokenParsed.expiresAt + 1);
+        client.tokenManager.get('test-idToken')
+        .then(function(token) {
+          expect(token).toBeUndefined();
+          done();
+        });
       });
 
       it('emits "expired" on new tokens even when autoRefresh is disabled', function(done) {
@@ -395,6 +413,11 @@ define(function(require) {
           done();
         });
         util.warpByTicksToUnixTime(tokens.standardIdTokenParsed.expiresAt + 1);
+        client.tokenManager.get('test-idToken')
+        .then(function(token) {
+          expect(token).toBeUndefined();
+          done();
+        });
       });
     });
 
@@ -417,13 +440,39 @@ define(function(require) {
       });
 
       describe('get', function() {
-        it('gets a token', function() {
+        beforeEach(function() {
+          jasmine.clock().install();
+        });
+
+        afterEach(function() {
+          jasmine.clock().uninstall();
+        });
+
+        it('returns a token', function(done) {
           var client = localStorageSetup();
           localStorage.setItem('okta-token-storage', JSON.stringify({
             'test-idToken': tokens.standardIdTokenParsed
           }));
-          var result = client.tokenManager.get('test-idToken');
-          expect(result).toEqual(tokens.standardIdTokenParsed);
+          util.warpToUnixTime(tokens.standardIdTokenClaims.iat);
+          client.tokenManager.get('test-idToken')
+          .then(function(token) {
+            expect(token).toEqual(tokens.standardIdTokenParsed);
+            done();
+          });
+          client.tokenManager.clear();
+        });
+
+        it('returns undefined for an expired token', function(done) {
+          var client = localStorageSetup();
+          localStorage.setItem('okta-token-storage', JSON.stringify({
+            'test-idToken': tokens.standardIdTokenParsed
+          }));
+          client.tokenManager.get('test-idToken')
+          .then(function(token) {
+            expect(token).toBeUndefined();
+            done();
+          });
+          client.tokenManager.clear();
         });
       });
 
@@ -473,13 +522,37 @@ define(function(require) {
       });
 
       describe('get', function() {
-        it('gets a token', function() {
+        beforeEach(function() {
+          jasmine.clock().install();
+        });
+
+        afterEach(function() {
+          jasmine.clock().uninstall();
+        });
+
+        it('returns a token', function(done) {
           var client = sessionStorageSetup();
           sessionStorage.setItem('okta-token-storage', JSON.stringify({
             'test-idToken': tokens.standardIdTokenParsed
           }));
-          var result = client.tokenManager.get('test-idToken');
-          expect(result).toEqual(tokens.standardIdTokenParsed);
+          util.warpToUnixTime(tokens.standardIdTokenClaims.iat);
+          client.tokenManager.get('test-idToken')
+          .then(function(token) {
+            expect(token).toEqual(tokens.standardIdTokenParsed);
+            done();
+          });
+        });
+
+        it('returns undefined for an expired token', function(done) {
+          var client = sessionStorageSetup();
+          sessionStorage.setItem('okta-token-storage', JSON.stringify({
+            'test-idToken': tokens.standardIdTokenParsed
+          }));
+          client.tokenManager.get('test-idToken')
+          .then(function(token) {
+            expect(token).toBeUndefined();
+            done();
+          });
         });
       });
 
@@ -496,7 +569,7 @@ define(function(require) {
           });
         });
       });
-      
+
       describe('clear', function() {
         it('clears all tokens', function() {
           var client = sessionStorageSetup();
@@ -532,13 +605,37 @@ define(function(require) {
       });
 
       describe('get', function() {
-        it('gets a token', function() {
+        beforeEach(function() {
+          jasmine.clock().install();
+        });
+
+        afterEach(function() {
+          jasmine.clock().uninstall();
+        });
+
+        it('returns a token', function(done) {
           var client = cookieStorageSetup();
           util.mockGetCookie('okta-token-storage=' + JSON.stringify({
             'test-idToken': tokens.standardIdTokenParsed
           }) + ';');
-          var result = client.tokenManager.get('test-idToken');
-          expect(result).toEqual(tokens.standardIdTokenParsed);
+          util.warpToUnixTime(tokens.standardIdTokenClaims.iat);
+          client.tokenManager.get('test-idToken')
+          .then(function(token) {
+            expect(token).toEqual(tokens.standardIdTokenParsed);
+            done();
+          });
+        });
+
+        it('returns undefined for an expired token', function(done) {
+          var client = cookieStorageSetup();
+          util.mockGetCookie('okta-token-storage=' + JSON.stringify({
+            'test-idToken': tokens.standardIdTokenParsed
+          }) + ';');
+          client.tokenManager.get('test-idToken')
+          .then(function(token) {
+            expect(token).toBeUndefined();
+            done();
+          });
         });
       });
 

@@ -208,7 +208,6 @@ define(function(require) {
         if (opts.autoRefresh) {
           return;
         }
-
         var expectedResp = opts.expectedResp || defaultResponse;
         validateResponse(res, expectedResp);
       })
@@ -263,7 +262,7 @@ define(function(require) {
       // All iframes should be created and destroyed in the same test
       var iframes = document.getElementsByTagName('IFRAME');
       expect(iframes.length).toBe(0);
-      
+
       // Remove any frames that exist, so we don't taint our other tests
       oauthUtil.removeAllFrames();
     }
@@ -330,7 +329,7 @@ define(function(require) {
         }
       });
   };
-  
+
   oauthUtil.setupRedirect = function(opts) {
     var client = new OktaAuth(opts.oktaAuthArgs || {
       url: 'https://auth-js-test.okta.com',
@@ -489,7 +488,7 @@ define(function(require) {
         .fin(done);
     });
   };
-  
+
   oauthUtil.expectTokenStorageToEqual = function(storage, obj) {
     var parsed = JSON.parse(storage.getItem('okta-token-storage'));
     expect(parsed).toEqual(obj);
