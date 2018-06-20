@@ -1307,12 +1307,20 @@ authClient.token.getWithPopup()
 
 ## tokenManager.get(key)
 
-Get a token that you have previously added to the `tokenManager` with the given `key`.
+Get a token that you have previously added to the `tokenManager` with the given `key`. The token object will be returned if it has not expired.
 
 - `key` - Key for the token you want to get
 
 ```javascript
-var token = authClient.tokenManager.get('my_id_token');
+authClient.tokenManager.get('my_id_token')
+.then(function(token) {
+  if (token) {
+    // Token is valid
+    doSomethingWith(token);
+  } else {
+    // Token has expired
+  }
+});
 ```
 
 ## tokenManager.remove(key)
@@ -1363,6 +1371,9 @@ Subscribe to an event published by the `tokenManager`.
 - `context` - Optional context to bind the callback to
 
 ```javascript
+// Triggered when the token can no longer be refreshed leveraging the Okta
+// session (silent refresh). Alternatively, this event is fired when
+// autoRefresh has been disabled, and the token has expired.
 authClient.tokenManager.on('expired', function (key, expiredToken) {
   console.log('Token with key', key, ' has expired:');
   console.log(expiredToken);
